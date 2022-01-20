@@ -2,13 +2,13 @@
 Class responsible for simulating a drone with a mobile camera attached to a gamble. It contains all the methods needed to 
 communicate with the simulated model in the gazebo, as well as retrieve and change its data and parameters.
 """
+
 import roslibpy
 import rospy
 from gazebo_msgs.srv import GetModelState
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import SetModelState
 from geometry_msgs.msg import Twist
-
 import time
 
 class Drone():
@@ -25,16 +25,6 @@ class Drone():
 
         #Setting up the topic that will be responsible for sending the speed commands to the drone
         self.move_topic = roslibpy.Topic(client, '/cmd_vel', '/geometry_msgs/Twist')
-
-        #Setting up the topic that will be responsible for sending the commands to the camera's gamble
-            #TO DO
-
-        #Setting up the topic that will be responsible for getting the images back from the camera
-            #TO DO
-
-        # Setting up the topic that will be responsible for retrieving the imu data from the drone
-            #TO DO
-
 
         self.reset_service = roslibpy.Service(client, '/gazebo/reset_simulation', 'std_srvs/Empty')
 
@@ -91,7 +81,6 @@ class Drone():
             state_msg.pose.orientation.w = 0
             set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
             set_state( state_msg )
-    
 
     def getDronePosition(self):
         '''
@@ -148,5 +137,12 @@ class Drone():
 
     ##########Simulation Functions###########
 
+    #todo
     def getSimulationTime(self):
         return 1
+
+    def resetSimulation():
+        setDroneSpeed(self, [0,0,1],[0,0,0])
+        setDroneSpeed(self, [0,0,0],[0,0,0])
+        setDronePosition(self, [0,0,1],[0,0,0])
+
