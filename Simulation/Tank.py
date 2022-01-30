@@ -4,38 +4,35 @@ communicate with the simulated model in the gazebo, as well as retrieve and chan
 """
 
 import roslibpy
+import roslibpy
 import rospy
 from gazebo_msgs.srv import GetModelState
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import SetModelState
 from geometry_msgs.msg import Twist
 import time
-import math 
 
-class Drone():
+class Tank():
 
 
-    def __init__(self, client):
+    def __init__(self, client, name):
 
-        #Variables responsible for storing the drone's speed 
-        self._linear_speed = [0,0,0]
-        self._angular_speed = [0,0,0]
+        #Variables responsible for storing the tank's speed
+        self._linear_speed = 0
+        self._angular_speed = 0
 
-        #variables for camera rotation (radian)
-        self._pitch = 0
-        slef._yaw = 0
+        #Variables responsible for storing position and orientation
+        self._position = [0,0,0]
+        self._rotation = [0,0,0]
 
-        self.drone_name = "quadrotor"
-        self.camera_name = "camera"
+        self.tank_name = name
 
-        #Setting up the topic that will be responsible for sending the speed commands to the drone
-        self.move_topic = roslibpy.Topic(client, '/cmd_vel', '/geometry_msgs/Twist')
-
+        self.reset_service = roslibpy.Service(client, '/gazebo/reset_simulation', 'std_srvs/Empty')
 
     
     ############Drone Functions############
 
-    def setDroneSpeed(self, linear, angular):
+    def setTlinear_speedankSpeed(self, linear, angular):
         '''
                 Function responsible for changing the speed of the drone. The drone will maintain the speed until it is changed by a 
                 new call of this same function.
@@ -53,29 +50,29 @@ class Drone():
 
         self.move_topic.publish(roslibpy.Message(speed))
 
-    def getDroneSpeed(self):
+    def getTankSpeed(self):
         '''
-            The function will return the momentary linear and angular velocities of the drone
+            The function will return the momentary linear and angular velocities of the tank
            
             Inputs:
                    
             Outputs:
-                -2x3 matrix containing the two momentary linear and angular velocity vectors of the drone [[Vx, Vy, Vz],[Wx, Wy, Wz]]   
+                -2x3 matrix containing the two momentary linear and angular velocity vectors of the tank (V , W)
         '''
-        return [self._linear_speed,self._angular_speed]
+        return self._linear_speed,self._angular_speed
  
-    def setDronePosition(self, position, orientation):
+    def setTankPosition(self, position, orientation):
             '''
-                    Function responsible for changing the drone position and orientation
+                    Function responsible for changing the tank position and orientation
             
                 Inputs:
-                        "position"  -> 3-element list representing the position of the drone [Px, Py, Pz]
-                        "orientation" -> 3-element list representing the orientation of the drone [Ox, Oy, Oz]
+                        "position"  -> 3-element list representing the position of the tank [Px, Py, Pz]
+                        "orientation" -> 3-element list representing the orientation of the tank [Ox, Oy, Oz]
                 Outputs:
                 
             '''
             state_msg = ModelState()
-            state_msg.model_name = self.drone_name
+            state_msg.model_name = self.tank_name
             state_msg.pose.position.x = position[0]
             state_msg.pose.position.y = position[1]
             state_msg.pose.position.z = position[2]
@@ -126,25 +123,12 @@ class Drone():
     ############Camera Functions############
 
     #todo
-    def setCameraOrientation(self, pitch, yaw, radian=True):
-        
-        if(!radian):
-            _pitch = pitch * math.pi / 180
-            _yaw = yaw *  math.pi / 180
-
-        if(pitch < 0)pitch = 0
-        if(pitch > math.pi) pitch = math.pi
-
-        if(yaw < -2*math.pi)yaw = -2*math.pi
-        if(yaw > 2*math.pi) yaw = 2*math.pi
-
+    def setCameraOrientation(self):
         return
 
     #todo
-    def getCameraOrientation(self, degree=False):
-        if(degree):
-            return _pitch*180/math.pi, _yaw*180/math.pi
-        return  _pitch, _yaw
+    def getCameraOrientation(self):
+        return
 
     #todo
     def getCameraImage(self):
