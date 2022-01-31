@@ -8,15 +8,78 @@ will calculate the accumulated errors to issue a final evaluation of the code's 
 import sys
 sys.path.append('../')
 from Simulation.Drone import Drone
+from Simulation.Tank import Tank
+import math
 import rospy
-import roslibpy
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
 
-#Starting the client that will be responsible for sending and receiving the messages from the ROS nodes.
-client = roslibpy.Ros(host="localhost", port=9090)
-client.run()
+#Starting the node that will listen and publish the messages
+rospy.init_node('testing_pid', anonymous=True)
 
 #Initializing the drone
-drone = Drone(client)
+drone = Drone()
 
-#Initializing the PID controller
+#Initializig the Tank
+tank = Tank("polaris_ranger_ev")
+
+
+#Initializing the PID controllers
 #TO DO
+
+
+#Variables
+drone_positions = []
+tank_positions = []
+target_positions = []
+
+d_vel = [0,0,0]
+
+time = 0
+
+#Control Loop
+while (tank.followTankTraj(time)):
+
+    #Getting Positions
+    drone_positions += [drone.getDronePosition()]
+    tank_positions += [tank.getTankPosition()]
+    tank_ori = tank.getTankOrientation()
+
+    #Getting Image
+    image = drone.getCameraImage()
+
+    #Calculate Target position
+    """change that """
+    target_positions += [[tank_positions[-1][0] -5 * math.cos(tank_ori[2]),
+                         tank_positions[-1][1] -5 * math.sin(tank_ori[2]),
+                         tank_positions[-1][2] + 3]]
+
+
+    #Calculate PID Commands for the drone
+    '''CHANGE THAT FOR THE PID'''
+    d_vel[0] = (target_positions[-1][0] - drone_positions[-1][0]) * 0.6
+    d_vel[1] = (target_positions[-1][1] - drone_positions[-1][1]) * 0.6
+    d_vel[2] = (target_positions[-1][2] - drone_positions[-1][2]) * 0.6
+
+    #Calculate PID Commands for the camera
+    #Todo
+
+    #Send commands to Drone
+    drone.setDroneSpeed(d_vel,[0,0,0])
+
+    #Sendo Commands to Camera
+    drone.setCameraOrientation(0,0)
+
+    #Getting simulation time
+    time += 0.005
+
+    #Show image
+    cv2.imshow("camera", image)
+    cv2.waitKey(2)
+
+
+plt.plot(range(len(drone_positions)), np.array(drone_positions)[:,0], 'r') # plotting t, a separately 
+plt.plot(range(len(drone_positions)), np.array(tank_positions)[:,0], 'b') # plotting t, b separately 
+plt.plot(range(len(drone_positions)), np.array(target_positions)[:,0], 'g') # plotting t, c separately 
+plt.show()

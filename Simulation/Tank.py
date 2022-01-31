@@ -11,28 +11,31 @@ from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import SetModelState
 from geometry_msgs.msg import Twist
 import time
+import math
 
 class Tank():
 
 
-    def __init__(self, client, name):
+    def __init__(self, name):
 
         #Variables responsible for storing the tank's speed
         self._linear_speed = 0
         self._angular_speed = 0
 
         #Variables responsible for storing position and orientation
-        self._position = [0,0,0]
+        self._position = [4,0,0]
         self._rotation = [0,0,0]
-
         self.tank_name = name
 
-        self.reset_service = roslibpy.Service(client, '/gazebo/reset_simulation', 'std_srvs/Empty')
+        self._time = 0
+
+        self.image = [0]
+
 
     
     ############Drone Functions############
 
-    def setTlinear_speedankSpeed(self, linear, angular):
+    def setTankSpeed(self, linear, angular):
         '''
                 Function responsible for changing the speed of the drone. The drone will maintain the speed until it is changed by a 
                 new call of this same function.
@@ -43,12 +46,6 @@ class Tank():
             Outputs:
                 
         '''
-        self._linear_speed = linear
-        self._angular_speed = angular
-
-        speed = {'linear': {'x': linear[0], 'y': linear[1], 'z': linear[2]}, 'angular': {'x': angular[0], 'y': angular[1], 'z': angular[2]}}
-
-        self.move_topic.publish(roslibpy.Message(speed))
 
     def getTankSpeed(self):
         '''
@@ -76,74 +73,101 @@ class Tank():
             state_msg.pose.position.x = position[0]
             state_msg.pose.position.y = position[1]
             state_msg.pose.position.z = position[2]
-            state_msg.pose.orientation.x = orientation[0]
-            state_msg.pose.orientation.y = orientation[1]
-            state_msg.pose.orientation.z = orientation[2]
-            state_msg.pose.orientation.w = 0
+            state_msg.pose.orientation.x = 0
+            state_msg.pose.orientation.y = 0
+            state_msg.pose.orientation.z = math.sin(orientation[2]/2)
+            state_msg.pose.orientation.w = math.cos(orientation[2]/2)
             set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
             set_state( state_msg )
 
-    def getDronePosition(self):
+    def getTankPosition(self):
         '''
-            The function will return the position of the drone
+            The function will return the position of the Tank
            
             Inputs:
                    
             Outputs:
                 -1x3 matrix containing the position [Px, Py, Pz] 
         '''
-        model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        object_coordinates = model_coordinates(self.drone_name, "")
 
-        return [object_coordinates.pose.position.x,object_coordinates.pose.position.y,object_coordinates.pose.position.z]
+        return self._position.copy()
 
-    def getDroneOrientation(self):
+    def getTankOrientation(self):
         '''
-            The function will return the orientation of the drone
+            The function will return the orientation of the Tank
            
             Inputs:
                    
             Outputs:
                 -1x3 matrix containing the orientation [Px, Py, Pz] 
         '''
+
         model_coordinates = rospy.ServiceProxy( '/gazebo/get_model_state', GetModelState)
-        object_coordinates = model_coordinates(self.drone_name, "")
+        object_coordinates = model_coordinates(self.tank_name, "")
 
         return [object_coordinates.pose.orientation.x,object_coordinates.pose.orientation.y,object_coordinates.pose.orientation.z]
-    
-    #todo
-    def take_off(self):
-        return
-    
-    #todo
-    def land_on(self):
-        return
+
+    def followTankTraj(self, time):
+
+        if( time <= 10):
+            self._linear_speed = [1.5*time,0,0]
+            self._angular_speed = [0,0,0]
+
+        elif(time > 10 and time <= 25):
+            self._linear_speed = [1.5*time,0,0]
+            self._angular_speed = [0,0,0]
+        
+        elif(time > 25 and time <= 30):
+            self._linear_speed = [15 - (time - 25)*1.5 ,0,0]
+            self._angular_speed = [0,0,0]
+        
+        elif(time > 30 and time <= 35):
+            self._linear_speed = [7.5 ,0,0]
+            self._angular_speed = [0,0,0.628]
+
+        elif(time > 35 and time <= 40):
+            self._linear_speed = [7.5 + (time - 35)*0.5 ,0,0]
+            self._angular_speed = [0,0,0]
+        
+        elif(time > 40 and time <= 50):
+            self._linear_speed = [10 ,0,0]
+            self._angular_speed = [0,0,0]
+        
+        elif(time > 50 and time <= 60):
+            self._linear_speed = [10 ,0,0]
+            self._angular_speed = [0,0,0.2]
+        
+        elif(time > 60 and time <= 70):
+            self._linear_speed = [10 ,0,0]
+            self._angular_speed = [0,0,-0.2]
+        
+        elif(time > 70 and time <= 80):
+            self._linear_speed = [10 - (time - 70)*0.5 ,0,0]
+            self._angular_speed = [0,0,-0.5]
+        
+        elif(time > 80 and time <= 90):
+            self._linear_speed = [5 ,0,0]
+            self._angular_speed = [0,0,0]
+        
+        elif(time > 90 and time <= 95):
+            self._linear_speed = [5 - (time - 90) ,0,0]
+            self._angular_speed = [0,0,0.6]
+
+        elif(time > 95 and time <= 100):
+            self._linear_speed = [0 ,0,0]
+            self._angular_speed = [0,0,0]
+        else:
+            return False
 
 
-    ############Camera Functions############
+        delta = time - self._time
+        self._time = time
 
-    #todo
-    def setCameraOrientation(self):
-        return
+        self._position[0] += math.cos(self._rotation[2])*self._linear_speed[0]*delta
+        self._position[1] += math.sin(self._rotation[2])*self._linear_speed[0]*delta
+        self._rotation[2] += self._angular_speed[2]*delta
 
-    #todo
-    def getCameraOrientation(self):
-        return
+        self.setTankPosition(self._position, self._rotation)
+        return True
 
-    #todo
-    def getCameraImage(self):
-
-        return
-
-
-    ##########Simulation Functions###########
-
-    #todo
-    def getSimulationTime(self):
-        return 1
-
-    def resetSimulation():
-        setDroneSpeed(self, [0,0,1],[0,0,0])
-        setDroneSpeed(self, [0,0,0],[0,0,0])
-        setDronePosition(self, [0,0,1],[0,0,0])
 

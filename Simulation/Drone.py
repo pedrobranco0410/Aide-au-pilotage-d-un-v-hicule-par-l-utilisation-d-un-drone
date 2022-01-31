@@ -3,19 +3,22 @@ Class responsible for simulating a drone with a mobile camera attached to a gimb
 communicate with the simulated model in the gazebo, as well as retrieve and change its data and parameters.
 """
 
-import roslibpy
 import rospy
-from gazebo_msgs.srv import GetModelState
-from gazebo_msgs.msg import ModelState
-from gazebo_msgs.srv import SetModelState
-from geometry_msgs.msg import Twist
+from gazebo_msgs.srv    import GetModelState,SetModelState
+from gazebo_msgs.msg    import ModelState
+from geometry_msgs.msg  import Twist
+from std_msgs.msg       import Float64
+from sensor_msgs.msg    import CompressedImage, Imu
+from rosgraph_msgs.msg  import Clock
 import time
 import math 
+import cv2
+import numpy as np
 
 class Drone():
 
 
-    def __init__(self, client):
+    def __init__(self):
 
         #Variables responsible for storing the drone's speed 
         self._linear_speed = [0,0,0]
@@ -23,13 +26,25 @@ class Drone():
 
         #variables for camera rotation (radian)
         self._pitch = 0
-        slef._yaw = 0
+        self._yaw = 0
 
-        self.drone_name = "quadrotor"
-        self.camera_name = "camera"
+        self.drone_name = "uav1"
 
         #Setting up the topic that will be responsible for sending the speed commands to the drone
-        self.move_topic = roslibpy.Topic(client, '/cmd_vel', '/geometry_msgs/Twist')
+        self.cmd_vel_pub = rospy.Publisher('/uav1/cmd_vel', Twist, queue_size=10)
+
+        #Setting up the topic that will be responsible for sending the orientation commands to the camera
+        self.cmd_pitch_pub = rospy.Publisher('/uav1/gimbal_pitch_controller/command', Float64, queue_size=10)
+        self.cmd_yaw_pub = rospy.Publisher('/uav1/gimbal_yaw_controller/command', Float64, queue_size=10)
+
+        #Setting up the topic that will be responsible for recover the camera image and the imu data
+        self.camera_sub = rospy.Subscriber("/uav1/camera/dji_sdk/image_raw/compressed", CompressedImage, self.img_callback,  queue_size = 1)
+        self.imu_sub = rospy.Subscriber('/uav1/imu', Imu, self.imu_callback,  queue_size = 1)
+
+        #Simulation functions and topics
+        #todo
+        #self.clock_sub = ('/clock', Clock, self.clock_callback)
+        self.resetSimulation()
 
 
     
@@ -49,9 +64,17 @@ class Drone():
         self._linear_speed = linear
         self._angular_speed = angular
 
-        speed = {'linear': {'x': linear[0], 'y': linear[1], 'z': linear[2]}, 'angular': {'x': angular[0], 'y': angular[1], 'z': angular[2]}}
+        vel_msg = Twist()
+        vel_msg.linear.x = linear[0]
+        vel_msg.linear.y = linear[1]
+        vel_msg.linear.z = linear[2]
+        vel_msg.angular.x = angular[0]
+        vel_msg.angular.y = angular[1]
+        vel_msg.angular.z = angular[2]
 
-        self.move_topic.publish(roslibpy.Message(speed))
+        
+
+        self.cmd_vel_pub.publish(vel_msg)
 
     def getDroneSpeed(self):
         '''
@@ -123,43 +146,93 @@ class Drone():
         return
 
 
-    ############Camera Functions############
+    ############Camera adn Sensor Functions############
 
-    #todo
     def setCameraOrientation(self, pitch, yaw, radian=True):
-        
-        if(!radian):
-            _pitch = pitch * math.pi / 180
-            _yaw = yaw *  math.pi / 180
+        '''
+                Function responsible for changing the orientation of the camera
+           
+            Inputs:
+                    "pitch"  ->  rotation in the y-axis in degrees or radians [0,pi] -[0,180]
+                    "yaw"    ->  rotation in the z-axis in degress or radians [-2pi,2pi] - [-360,360]
+                    "radian" ->  bool to indicate if the values are in degrees or radians
+            Outputs:
+                
+        '''
 
-        if(pitch < 0)pitch = 0
-        if(pitch > math.pi) pitch = math.pi
+        #Change for radians if it is in degrees
+        if(not radian):
+            self._pitch = pitch * math.pi / 180
+            self._yaw = yaw *  math.pi / 180
 
-        if(yaw < -2*math.pi)yaw = -2*math.pi
-        if(yaw > 2*math.pi) yaw = 2*math.pi
+        #Verify limits
+        if(pitch < 0):self._pitch = 0
+        if(pitch > math.pi): self._pitch = math.pi
+        if(yaw < -2*math.pi):self._yaw = -2*math.pi
+        if(yaw > 2*math.pi): self._yaw = 2*math.pi
 
         return
 
-    #todo
     def getCameraOrientation(self, degree=False):
+        '''
+            The function will return the orientation of the camera
+           
+            Inputs:
+                   degree - boolean to indicate if the values are in radians or degrees
+            Outputs:
+                -pitch, yaw in radians or degrees 
+        '''
+
+
         if(degree):
             return _pitch*180/math.pi, _yaw*180/math.pi
-        return  _pitch, _yaw
+        return  self._pitch, self._yaw
+
+    def getCameraImage(self):
+        '''
+                Function responsible for get the camera image
+           
+            Inputs:
+
+            Outputs:
+                    -image in CV2
+        '''
+        return self.image
+
+    def img_callback(self, ros_data):
+
+        np_arr = np.fromstring(ros_data.data, np.uint8)
+        self.image = cv2.imdecode(np_arr,  cv2.IMREAD_COLOR)
 
     #todo
-    def getCameraImage(self):
-
+    def getIMUData(self):
         return
 
+    #todo
+    def imu_callback(self, ros_data):
+        '''
+        imu.orientation.x = q[0]
+        imu.orientation.y = q[1]
+        imu.orientation.z = q[2]
+        imu.orientation.w = q[3]
+        imu.linear_acceleration.x = oxts.packet.af
+        imu.linear_acceleration.y = oxts.packet.al
+        imu.linear_acceleration.z = oxts.packet.au
+        imu.angular_velocity.x = oxts.packet.wf
+        imu.angular_velocity.y = oxts.packet.wl
+        imu.angular_velocity.z = oxts.packet.wu'''
+        return
 
     ##########Simulation Functions###########
 
     #todo
+    def clock_callback(self, ros_data):
+        return
     def getSimulationTime(self):
         return 1
 
-    def resetSimulation():
-        setDroneSpeed(self, [0,0,1],[0,0,0])
-        setDroneSpeed(self, [0,0,0],[0,0,0])
-        setDronePosition(self, [0,0,1],[0,0,0])
+    def resetSimulation(self):
+        self.setDroneSpeed([0,0,1],[0,0,0])
+        self.setDroneSpeed([0,0,0],[0,0,0])
+        self.setDronePosition([0,0,1],[0,0,0])
 
