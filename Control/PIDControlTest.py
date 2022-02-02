@@ -14,21 +14,12 @@ communicate with the simulated model in the gazebo, as well as retrieve and chan
 #from http.client import ImproperConnectionState
 import sys
 sys.path.append('../')
-import math
 import rospy
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from gazebo_msgs.srv    import GetModelState,SetModelState
-from gazebo_msgs.msg    import ModelState
-from geometry_msgs.msg  import Twist
-from std_msgs.msg       import Float64
-from sensor_msgs.msg    import CompressedImage, Imu
-from rosgraph_msgs.msg  import Clock
 import time
 import math 
-import cv2
-import numpy as np
 from Drone import Drone
 from pid_3D import PID_3D
 from Tank import Tank
@@ -71,7 +62,6 @@ while (tank.followTankTraj(time)):
 
     #Calculate Target position
     """change that """
-    print("angle = ", tank_ori[2])
     target_positions += [[tank_positions[-1][0] -5 * math.cos(tank_ori[2]),
                          tank_positions[-1][1] -5 * math.sin(tank_ori[2]),
                          tank_positions[-1][2] + 5]]
