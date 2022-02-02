@@ -1,4 +1,3 @@
-from this import d
 import matplotlib.animation as anim
 import time
 import numpy as np
