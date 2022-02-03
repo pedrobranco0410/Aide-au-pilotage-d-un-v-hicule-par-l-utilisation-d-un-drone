@@ -9,6 +9,7 @@ import sys
 sys.path.append('../')
 from Simulation.Drone import Drone
 from Simulation.Tank import Tank
+import PIDControl
 import math
 import rospy
 import cv2
@@ -22,7 +23,7 @@ rospy.init_node('testing_pid', anonymous=True)
 drone = Drone()
 
 #Initializig the Tank
-tank = Tank("polaris_ranger_ev")
+tank = Tank("suv")
 
 
 #Initializing the PID controllers
@@ -51,16 +52,13 @@ while (tank.followTankTraj(time)):
 
     #Calculate Target position
     """change that """
-    target_positions += [[tank_positions[-1][0] -5 * math.cos(tank_ori[2]),
-                         tank_positions[-1][1] -5 * math.sin(tank_ori[2]),
-                         tank_positions[-1][2] + 3]]
-
-
+    target_positions += [drone.getTargetPosition(tank_positions[-1],tank_ori,1)]
+        
     #Calculate PID Commands for the drone
     '''CHANGE THAT FOR THE PID'''
-    d_vel[0] = (target_positions[-1][0] - drone_positions[-1][0]) * 0.6
-    d_vel[1] = (target_positions[-1][1] - drone_positions[-1][1]) * 0.6
-    d_vel[2] = (target_positions[-1][2] - drone_positions[-1][2]) * 0.6
+    d_vel[0] = (target_positions[-1][0] - drone_positions[-1][0]) 
+    d_vel[1] = (target_positions[-1][1] - drone_positions[-1][1]) 
+    d_vel[2] = (target_positions[-1][2] - drone_positions[-1][2]) 
 
     #Calculate PID Commands for the camera
     #Todo
@@ -69,10 +67,10 @@ while (tank.followTankTraj(time)):
     drone.setDroneSpeed(d_vel,[0,0,0])
 
     #Sendo Commands to Camera
-    drone.setCameraOrientation(0,0)
+    drone.setCameraOrientation(0, tank_ori[2])
 
     #Getting simulation time
-    time += 0.005
+    time += 0.003
 
     #Show image
     cv2.imshow("camera", image)

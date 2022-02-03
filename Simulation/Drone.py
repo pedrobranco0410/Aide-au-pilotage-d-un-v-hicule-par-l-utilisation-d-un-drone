@@ -28,6 +28,8 @@ class Drone():
         self._pitch = 0
         self._yaw = 0
 
+        self.image = [0]
+
         self.drone_name = "uav1"
 
         #Setting up the topic that will be responsible for sending the speed commands to the drone
@@ -137,6 +139,47 @@ class Drone():
 
         return [object_coordinates.pose.orientation.x,object_coordinates.pose.orientation.y,object_coordinates.pose.orientation.z]
     
+    def getTargetPosition(self, position, orientation, view):
+        '''
+            The function will return the taget position based on the wanted view
+           
+            Inputs:
+                -position: matrix containing the position of the target [Px, Py, Pz]
+                -orientation: matrix containing the  orientation of the target [Ox, Oy, Oz]
+                -view: {0:Top, 1:behind, 2:front, 3:left: 4:right}
+                   
+            Outputs:
+                -1x3 matrix containing the target position [Px, Py, Pz] 
+        '''
+
+        radius = 5
+
+        t_pose = position.copy()
+        
+
+        if(view == 0): 
+            t_pose[2] += radius
+
+        elif(view == 1):
+            t_pose[0] -= radius*math.cos(orientation[2])
+            t_pose[1] -= radius*math.sin(orientation[2])
+
+        elif(view == 2):
+            t_pose[0] += radius*math.cos(orientation[2])
+            t_pose[1] += radius*math.sin(orientation[2])
+        
+        elif(view == 3):
+            t_pose[1] -= radius*math.cos(orientation[2])
+            t_pose[0] -= radius*math.sin(orientation[2])
+        
+        elif(view == 4):
+            t_pose[1] += radius*math.cos(orientation[2])
+            t_pose[0] += radius*math.sin(orientation[2])
+        
+        t_pose[2] += radius
+
+        return t_pose.copy()
+
     #todo
     def take_off(self):
         return
@@ -164,12 +207,23 @@ class Drone():
         if(not radian):
             self._pitch = pitch * math.pi / 180
             self._yaw = yaw *  math.pi / 180
+        else:
+            self._pitch = pitch
+            self._yaw = yaw
 
         #Verify limits
         if(pitch < 0):self._pitch = 0
         if(pitch > math.pi): self._pitch = math.pi
         if(yaw < -2*math.pi):self._yaw = -2*math.pi
         if(yaw > 2*math.pi): self._yaw = 2*math.pi
+
+        p = Float64()
+        p.data = self._pitch
+        y = Float64()
+        y.data = self._yaw
+        
+        self.cmd_pitch_pub.publish(p)
+        self.cmd_yaw_pub.publish(y)
 
         return
 
