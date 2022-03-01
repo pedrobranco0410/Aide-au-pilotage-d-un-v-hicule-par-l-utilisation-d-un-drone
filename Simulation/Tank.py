@@ -23,13 +23,16 @@ class Tank():
         self._angular_speed = 0
 
         #Variables responsible for storing position and orientation
-        self._position = [4,0,0]
+        self._position = [5,0,0]
         self._rotation = [0,0,0]
+
         self.tank_name = name
 
         self._time = 0
 
-        self.image = [0]
+        self.cmd_vel_pub = rospy.Publisher('/husky_velocity_controller/cmd_vel', Twist, queue_size=10)
+        self.setTankPosition(self._position,self._rotation)
+        self.setTankSpeed([0,0,0],[0,0,0])
 
 
     
@@ -46,6 +49,18 @@ class Tank():
             Outputs:
                 
         '''
+
+        vel_msg = Twist()
+        vel_msg.linear.x = linear[0]
+        vel_msg.linear.y = linear[1]
+        vel_msg.linear.z = linear[2]
+        vel_msg.angular.x = angular[0]
+        vel_msg.angular.y = angular[1]
+        vel_msg.angular.z = angular[2]
+
+        
+
+        self.cmd_vel_pub.publish(vel_msg)
 
     def getTankSpeed(self):
         '''
@@ -89,6 +104,11 @@ class Tank():
             Outputs:
                 -1x3 matrix containing the position [Px, Py, Pz] 
         '''
+                
+        model_coordinates = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+        object_coordinates = model_coordinates(self.tank_name, "")
+
+        return [object_coordinates.pose.position.x,object_coordinates.pose.position.y,object_coordinates.pose.position.z]
 
         return self._position.copy()
 
@@ -105,69 +125,34 @@ class Tank():
         model_coordinates = rospy.ServiceProxy( '/gazebo/get_model_state', GetModelState)
         object_coordinates = model_coordinates(self.tank_name, "")
 
-        return [object_coordinates.pose.orientation.x,object_coordinates.pose.orientation.y,object_coordinates.pose.orientation.z]
+        return [object_coordinates.pose.orientation.x,object_coordinates.pose.orientation.y,2*math.asin(object_coordinates.pose.orientation.z)]
 
     def followTankTraj(self, time):
 
-        if( time <= 10):
-            self._linear_speed = [1.5*time,0,0]
-            self._angular_speed = [0,0,0]
+        if(time <= 10):
+            self.setTankSpeed([0.3 * time,0,0],[0,0,0])
+        
+        elif(time <= 20):
+            self.setTankSpeed([3,0,0],[0,0,0.3])
 
-        elif(time > 10 and time <= 25):
-            self._linear_speed = [1.5*time,0,0]
-            self._angular_speed = [0,0,0]
+        elif(time <= 30):
+            self.setTankSpeed([3+ 0.2*(time-20),0,0],[0,0,0])
         
-        elif(time > 25 and time <= 30):
-            self._linear_speed = [15 - (time - 25)*1.5 ,0,0]
-            self._angular_speed = [0,0,0]
+        elif(time <= 40):
+            self.setTankSpeed([5 - 0.2*(time-30) ,0,0],[0,0,0])
         
-        elif(time > 30 and time <= 35):
-            self._linear_speed = [7.5 ,0,0]
-            self._angular_speed = [0,0,0.628]
+        elif(time <= 50):
+            self.setTankSpeed([3 ,0,0],[0,0,0.1])
 
-        elif(time > 35 and time <= 40):
-            self._linear_speed = [7.5 + (time - 35)*0.5 ,0,0]
-            self._angular_speed = [0,0,0]
+        elif(time <= 60):
+            self.setTankSpeed([3 - 0.3*(time-50) ,0,0],[0,0,0])
         
-        elif(time > 40 and time <= 50):
-            self._linear_speed = [10 ,0,0]
-            self._angular_speed = [0,0,0]
-        
-        elif(time > 50 and time <= 60):
-            self._linear_speed = [10 ,0,0]
-            self._angular_speed = [0,0,0.2]
-        
-        elif(time > 60 and time <= 70):
-            self._linear_speed = [10 ,0,0]
-            self._angular_speed = [0,0,-0.2]
-        
-        elif(time > 70 and time <= 80):
-            self._linear_speed = [10 - (time - 70)*0.5 ,0,0]
-            self._angular_speed = [0,0,-0.5]
-        
-        elif(time > 80 and time <= 90):
-            self._linear_speed = [5 ,0,0]
-            self._angular_speed = [0,0,0]
-        
-        elif(time > 90 and time <= 95):
-            self._linear_speed = [5 - (time - 90) ,0,0]
-            self._angular_speed = [0,0,0.6]
-
-        elif(time > 95 and time <= 100):
-            self._linear_speed = [0 ,0,0]
-            self._angular_speed = [0,0,0]
-        else:
+        elif(time <= 70):
+            self.setTankSpeed([0,0,0],[0,0,0])
+            
+        if(time > 70):
             return False
 
-
-        delta = time - self._time
-        self._time = time
-
-        self._position[0] += math.cos(self._rotation[2])*self._linear_speed[0]*delta
-        self._position[1] += math.sin(self._rotation[2])*self._linear_speed[0]*delta
-        self._rotation[2] += self._angular_speed[2]*delta
-
-        self.setTankPosition(self._position, self._rotation)
         return True
 
 

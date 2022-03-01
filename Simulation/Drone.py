@@ -28,7 +28,9 @@ class Drone():
         self._pitch = 0
         self._yaw = 0
 
-        self.image = [0]
+        self.image =  np.zeros((100,100,3), dtype=np.uint8)
+        self.t_now = 0
+        self.t_begin =0
 
         self.drone_name = "uav1"
 
@@ -38,14 +40,14 @@ class Drone():
         #Setting up the topic that will be responsible for sending the orientation commands to the camera
         self.cmd_pitch_pub = rospy.Publisher('/uav1/gimbal_pitch_controller/command', Float64, queue_size=10)
         self.cmd_yaw_pub = rospy.Publisher('/uav1/gimbal_yaw_controller/command', Float64, queue_size=10)
+        self.cmd_roll_pub = rospy.Publisher('/uav1/gimbal_roll_controller/command', Float64, queue_size=10)
 
         #Setting up the topic that will be responsible for recover the camera image and the imu data
         self.camera_sub = rospy.Subscriber("/uav1/camera/dji_sdk/image_raw/compressed", CompressedImage, self.img_callback,  queue_size = 1)
         self.imu_sub = rospy.Subscriber('/uav1/imu', Imu, self.imu_callback,  queue_size = 1)
 
         #Simulation functions and topics
-        #todo
-        #self.clock_sub = ('/clock', Clock, self.clock_callback)
+        self.clock_sub =  rospy.Subscriber('/clock', Clock, self.clock_callback,queue_size = 1)
         self.resetSimulation()
 
 
@@ -137,7 +139,7 @@ class Drone():
         model_coordinates = rospy.ServiceProxy( '/gazebo/get_model_state', GetModelState)
         object_coordinates = model_coordinates(self.drone_name, "")
 
-        return [object_coordinates.pose.orientation.x,object_coordinates.pose.orientation.y,object_coordinates.pose.orientation.z]
+        return [object_coordinates.pose.orientation.x,object_coordinates.pose.orientation.y,2*math.asin(object_coordinates.pose.orientation.z)]
     
     def getTargetPosition(self, position, orientation, view):
         '''
@@ -152,13 +154,13 @@ class Drone():
                 -1x3 matrix containing the target position [Px, Py, Pz] 
         '''
 
-        radius = 5
+        radius = 6
 
         t_pose = position.copy()
         
 
         if(view == 0): 
-            t_pose[2] += radius
+            t_pose[2] = radius
 
         elif(view == 1):
             t_pose[0] -= radius*math.cos(orientation[2])
@@ -176,7 +178,7 @@ class Drone():
             t_pose[1] += radius*math.cos(orientation[2])
             t_pose[0] += radius*math.sin(orientation[2])
         
-        t_pose[2] += radius
+        t_pose[2] = 4
 
         return t_pose.copy()
 
@@ -214,16 +216,19 @@ class Drone():
         #Verify limits
         if(pitch < 0):self._pitch = 0
         if(pitch > math.pi): self._pitch = math.pi
-        if(yaw < -2*math.pi):self._yaw = -2*math.pi
-        if(yaw > 2*math.pi): self._yaw = 2*math.pi
+        if(yaw < -1):self._yaw = -1
+        if(yaw > 1): self._yaw = 1
 
         p = Float64()
         p.data = self._pitch
         y = Float64()
         y.data = self._yaw
+        r =  Float64()
+        r.data = 0
         
         self.cmd_pitch_pub.publish(p)
         self.cmd_yaw_pub.publish(y)
+        self.cmd_roll_pub.publish(r)
 
         return
 
@@ -279,13 +284,16 @@ class Drone():
 
     ##########Simulation Functions###########
 
-    #todo
     def clock_callback(self, ros_data):
-        return
+        if(self.t_begin == 0):
+             self.t_begin = float(str(ros_data.clock))/1000000000
+        self.t_now = float(str(ros_data.clock))/1000000000
+
     def getSimulationTime(self):
-        return 1
+        return self.t_now - self.t_begin
 
     def resetSimulation(self):
+        self.t_begin = self.t_now
         self.setDroneSpeed([0,0,1],[0,0,0])
         self.setDroneSpeed([0,0,0],[0,0,0])
         self.setDronePosition([0,0,1],[0,0,0])
