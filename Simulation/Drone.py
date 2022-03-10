@@ -14,6 +14,7 @@ import time
 import math 
 import cv2
 import numpy as np
+import random
 
 class Drone():
 
@@ -154,21 +155,23 @@ class Drone():
                 -1x3 matrix containing the target position [Px, Py, Pz] 
         '''
 
-        radius = 6
+        radius = 7
 
         t_pose = position.copy()
         
 
         if(view == 0): 
-            t_pose[2] = radius
+            t_pose[2] += radius
 
         elif(view == 1):
             t_pose[0] -= radius*math.cos(orientation[2])
             t_pose[1] -= radius*math.sin(orientation[2])
+            t_pose[2] += radius
 
         elif(view == 2):
             t_pose[0] += radius*math.cos(orientation[2])
             t_pose[1] += radius*math.sin(orientation[2])
+            t_pose[2] += radius
         
         elif(view == 3):
             t_pose[1] -= radius*math.cos(orientation[2])
@@ -178,7 +181,7 @@ class Drone():
             t_pose[1] += radius*math.cos(orientation[2])
             t_pose[0] += radius*math.sin(orientation[2])
         
-        t_pose[2] = 4
+        #t_pose[2] = 10
 
         return t_pose.copy()
 
@@ -296,5 +299,5 @@ class Drone():
         self.t_begin = self.t_now
         self.setDroneSpeed([0,0,1],[0,0,0])
         self.setDroneSpeed([0,0,0],[0,0,0])
-        self.setDronePosition([0,0,1],[0,0,0])
+        self.setDronePosition([1,0,1],[0,0,0])
 

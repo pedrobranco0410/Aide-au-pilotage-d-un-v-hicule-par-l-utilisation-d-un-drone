@@ -30,27 +30,30 @@ tank = Tank("husky")
 pid = PID_3D(Kx=(2,0.1,1), Ky=(2,0.1,1), Kz=(2,0.1,1), cible=(5,0,0))
 
 
-#Variables for store traj
+#Variables for store trajectory
 drone_positions = []
 tank_positions = []
 target_positions = []
 
+#Initializing the simulation and the controlled variable (drone speed)
 d_vel = [0,0,0]
 drone.resetSimulation()
 
 #Control Loop
 while (tank.followTankTraj(drone.getSimulationTime())):
 
-    #Getting Positions
+    #Getting real positions and orientations from simulation
     drone_positions += [drone.getDronePosition()]
-    pid.set_position(drone_positions[-1])
     tank_positions += [tank.getTankPosition()]
     tank_ori = tank.getTankOrientation()
 
     #Getting Image
     image = drone.getCameraImage()
 
-    #Calculate Target position
+    #Updating the drone's position to the controller
+    pid.set_position(drone_positions[-1])
+
+    #Calculate Target position based on real position and orientation
     target_positions += [drone.getTargetPosition(tank_positions[-1],tank_ori,1)]
     pid.set_target(target_positions[-1])
         
@@ -62,7 +65,7 @@ while (tank.followTankTraj(drone.getSimulationTime())):
 
     #Send commands to Drone
     drone.setDroneSpeed(d_vel,[0,0,0])
-    drone.setCameraOrientation(1.6,0)
+    drone.setCameraOrientation(1.6,0) # the camera will always point down
 
     #Show image
     cv2.imshow('camera', image)
@@ -70,4 +73,5 @@ while (tank.followTankTraj(drone.getSimulationTime())):
 
 cv2.destroyAllWindows()
 
-pid.print_PID_2D(drone_positions, target_positions, tank_positions)
+#Just to check the path taken
+#pid.print_PID_2D(drone_positions, target_positions, tank_positions)

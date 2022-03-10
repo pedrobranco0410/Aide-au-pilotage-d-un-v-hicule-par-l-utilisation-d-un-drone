@@ -23,8 +23,9 @@ class Tank():
         self._angular_speed = 0
 
         #Variables responsible for storing position and orientation
-        self._position = [5,0,0]
+        self._position = [8,0,0]
         self._rotation = [0,0,0]
+
 
         self.tank_name = name
 
@@ -129,28 +130,30 @@ class Tank():
 
     def followTankTraj(self, time):
 
-        if(time <= 10):
-            self.setTankSpeed([0.3 * time,0,0],[0,0,0])
-        
-        elif(time <= 20):
-            self.setTankSpeed([3,0,0],[0,0,0.3])
+        if(time <= 5):
+            self.setTankSpeed([0,0,0],[0,0,0])
+            self.setTankPosition(self._position, self._rotation)
 
+        elif(time <= 15):
+            self.setTankSpeed([(time-5)*0.22,0,0],[0,0,0])
+        elif(time <= 25):
+            self.setTankSpeed([2.2,0,0],[0,0,0])
         elif(time <= 30):
-            self.setTankSpeed([3+ 0.2*(time-20),0,0],[0,0,0])
+            self.setTankSpeed([2.2 -(time-25)*0.4,0,0],[0,0,0])
+        
+        elif(time <= 35):
+            self.setTankSpeed([0,0,0],[0,0,0.5])
         
         elif(time <= 40):
-            self.setTankSpeed([5 - 0.2*(time-30) ,0,0],[0,0,0])
+            self.setTankSpeed([(time -35)*0.4,0,0],[0,0,0])
         
-        elif(time <= 50):
-            self.setTankSpeed([3 ,0,0],[0,0,0.1])
+        elif(time <= 90):
+            self.setTankSpeed([2,0,0],[0,0,0])
 
-        elif(time <= 60):
-            self.setTankSpeed([3 - 0.3*(time-50) ,0,0],[0,0,0])
-        
-        elif(time <= 70):
-            self.setTankSpeed([0,0,0],[0,0,0])
-            
-        if(time > 70):
+        elif(time <= 95):
+            self.setTankSpeed([2 - (time-90)*0.4,0,0],[0,0,0]) 
+
+        if(time > 100):
             return False
 
         return True

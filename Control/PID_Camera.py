@@ -1,3 +1,7 @@
+"""
+Code responsible for implementing the PID controller responsible for controlling 
+the drone's camera and centering the tank's image whenever possible and attainable.
+"""
 import matplotlib.animation as anim
 import time
 import numpy as np

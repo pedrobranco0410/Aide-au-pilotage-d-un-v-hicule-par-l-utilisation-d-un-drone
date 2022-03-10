@@ -1,3 +1,7 @@
+"""
+Code responsible for implementing the PID controller responsible for controlling the 
+linear velocities of the drone so that it follows a certain path
+"""
 import matplotlib.animation as anim
 import time
 import numpy as np
@@ -7,7 +11,7 @@ import math as ma
 import sys
 
 class PID_3D:
-    ################## FONCTIONS DE BASE ##########################
+
     def __init__(self, Kx=(1,1,1), Ky=(1,1,1), Kz=(1,1,1), cible=(0,0,0), temps_pause=None):
         '''
         Initialisation des 3 PID de l'espace -accessible via self.x, self.y et self.z- avec les paramètres suivants :
@@ -48,17 +52,15 @@ class PID_3D:
     
     def correction(self):
         '''
-        Fonction PID 3D principale qui met a jour les variables de self selon la position du drone et de la cible.
+        Main 3D PID function that updates the self variables according to the position of the drone and the target.
         '''
         self.vx = self.pid_x(self.x)
         self.vy = self.pid_y(self.y)
         self.vz = self.pid_z(self.z)
         #print("pos_x = {0:.2f} | pos_y = {1:.2f} | pos_z = {2:.2f}  ||  v_x = {3:.2f} | v_y = {4:.2f} | v_z = {5:.2f} |".format(self.x, self.y, self.z, self.vx, self.vy, self.vz))
 
-    ####################################################################
-    ############################### TESTS ##############################
-    ####################################################################
-   
+
+    # Functions used only in the simulation context to verify controller performance and assist in setting parameters
     def print_PID_2D(self, drone, target, tank):
         '''
         Test du pid et affichage 3D du suivi de chemin=(target1=(x,y,z), target2, etc...)
@@ -73,8 +75,6 @@ class PID_3D:
         ax.plot(t[:,0], t[:,1],label='Tank')
         ax.legend()
         plt.show()
-
-    
 
     def print_PID_3D(self, drone, target, tank):
         '''
