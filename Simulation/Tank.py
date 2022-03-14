@@ -1,6 +1,5 @@
 """
-Class responsible for simulating a drone with a mobile camera attached to a gimble. It contains all the methods needed to 
-communicate with the simulated model in the gazebo, as well as retrieve and change its data and parameters.
+Class responsible for simulating a the tank the we will use as reference for the drone.
 """
 
 import roslibpy
@@ -26,12 +25,14 @@ class Tank():
         self._position = [8,0,0]
         self._rotation = [0,0,0]
 
-
+        #Name of the model in simulation
         self.tank_name = name
 
         self._time = 0
 
         self.cmd_vel_pub = rospy.Publisher('/husky_velocity_controller/cmd_vel', Twist, queue_size=10)
+        
+        #Initializing the tank in origion
         self.setTankPosition(self._position,self._rotation)
         self.setTankSpeed([0,0,0],[0,0,0])
 
