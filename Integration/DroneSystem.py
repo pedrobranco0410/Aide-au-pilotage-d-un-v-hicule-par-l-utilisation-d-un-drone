@@ -1,5 +1,5 @@
 """
-
+Code responsible for integrate all developed solutions and validate the final project
 
 """
 
